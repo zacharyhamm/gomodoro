@@ -3,23 +3,24 @@ package main
 import (
 	"fmt"
 	"github.com/getlantern/systray"
-	"time"
 	"math"
+	"time"
 )
 
 type GomodoroState int
+
 const (
 	Initial GomodoroState = 0
 	Resting GomodoroState = 1
 	Working GomodoroState = 2
-	Toggle GomodoroState = 3
+	Toggle  GomodoroState = 3
 )
 
 const WorkMinutes int64 = 23
 const RestMinutes int64 = 7
 
 type SystrayUpdate struct {
-	state GomodoroState
+	state           GomodoroState
 	stateChangeTime time.Time
 }
 
@@ -33,12 +34,12 @@ func timeSince(state *SystrayUpdate) (int64, int64) {
 	elapsedSeconds := int64(math.Round(elapsed.Seconds()))
 	elapsedMinutes := int64(elapsedSeconds / 60)
 
-	return elapsedMinutes, elapsedSeconds - elapsedMinutes * 60
+	return elapsedMinutes, elapsedSeconds - elapsedMinutes*60
 }
 
 func updateSystray(state *SystrayUpdate) (int64, int64) {
 	if state.stateChangeTime.IsZero() || state.state == Initial {
-		systray.SetTitle("🍅");
+		systray.SetTitle("🍅")
 		return 0, 0
 	}
 
@@ -58,16 +59,16 @@ func updateSystray(state *SystrayUpdate) (int64, int64) {
 
 func onReady() {
 	systray.SetTitle("🍅")
-	systray.SetTooltip("Gomodoro");
+	systray.SetTooltip("Gomodoro")
 	mStartStop := systray.AddMenuItem("Start/Stop", "Start/Stop")
 	mQuitOrig := systray.AddMenuItem("Quit", "Bye bye")
 
 	globalState := &SystrayUpdate{Initial, time.Unix(0, 0)}
 
 	go func() {
-		<- mQuitOrig.ClickedCh
+		<-mQuitOrig.ClickedCh
 		systray.Quit()
-		fmt.Println("Quit");
+		fmt.Println("Quit")
 	}()
 
 	tick := make(chan int)
@@ -84,14 +85,14 @@ func onReady() {
 
 	go func() {
 		for {
-			<- mStartStop.ClickedCh
+			<-mStartStop.ClickedCh
 			stateChange <- Toggle
 		}
 	}()
 
 	go func() {
 		for {
-			state := <- stateChange
+			state := <-stateChange
 			globalState.stateChangeTime = time.Now()
 
 			if state == Toggle {
@@ -110,7 +111,7 @@ func onReady() {
 
 	go func() {
 		for {
-			<- tick
+			<-tick
 			minutes, _ := updateSystray(globalState)
 
 			if globalState.state == Resting && minutes >= RestMinutes {
@@ -119,9 +120,8 @@ func onReady() {
 			}
 
 			if globalState.state == Working && minutes >= WorkMinutes {
-				stateChange <- Resting 
+				stateChange <- Resting
 			}
 		}
 	}()
 }
-
