@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gen2brain/beeep"
 	"github.com/getlantern/systray"
 	"math"
 	"time"
@@ -37,7 +38,7 @@ func timeSince(state *SystrayUpdate) (int64, int64) {
 	return elapsedMinutes, elapsedSeconds - elapsedMinutes*60
 }
 
-func updateSystray(state *SystrayUpdate) (int64, int64) {
+func updateSystray(state *SystrayUpdate, beep bool) (int64, int64) {
 	if state.stateChangeTime.IsZero() || state.state == Initial {
 		systray.SetTitle("🍅")
 		return 0, 0
@@ -50,6 +51,11 @@ func updateSystray(state *SystrayUpdate) (int64, int64) {
 		stateString = "☕"
 	case Working:
 		stateString = "🔨"
+		beep = false
+	}
+
+	if (beep) {
+		beeep.Notify("🍅", stateString, "")
 	}
 
 	systray.SetTitle(fmt.Sprintf("%s%dm%ds", stateString, minutes, seconds))
@@ -105,14 +111,14 @@ func onReady() {
 				globalState.state = state
 			}
 
-			updateSystray(globalState)
+			updateSystray(globalState, true)
 		}
 	}()
 
 	go func() {
 		for {
 			<-tick
-			minutes, _ := updateSystray(globalState)
+			minutes, _ := updateSystray(globalState, false)
 
 			if globalState.state == Resting && minutes >= RestMinutes {
 				stateChange <- Initial
